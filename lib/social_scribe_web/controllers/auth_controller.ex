@@ -135,6 +135,26 @@ defmodule SocialScribeWeb.AuthController do
     end
   end
 
+  def callback(%{assigns: %{ueberauth_auth: auth, current_user: user}} = conn, %{
+        "provider" => "salesforce"
+      })
+      when not is_nil(user) do
+    Logger.info("Salesforce OAuth")
+    Logger.info(inspect(auth))
+
+    case Accounts.find_or_create_user_credential(user, auth) do
+      {:ok, _credential} ->
+        conn
+        |> put_flash(:info, "Salesforce account added successfully.")
+        |> redirect(to: ~p"/dashboard/settings")
+
+      {:error, _reason} ->
+        conn
+        |> put_flash(:error, "Could not add Salesforce account.")
+        |> redirect(to: ~p"/dashboard/settings")
+    end
+  end
+
   def callback(%{assigns: %{ueberauth_auth: auth}} = conn, _params) do
     Logger.info("Google OAuth Login")
     Logger.info(auth)
