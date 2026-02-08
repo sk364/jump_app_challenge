@@ -316,6 +316,13 @@ defmodule SocialScribe.Accounts do
     Repo.get_by(UserCredential, user_id: user_id, provider: "hubspot")
   end
 
+  @doc """
+  Gets the user's Salesforce credential if one exists.
+  """
+  def get_user_salesforce_credential(user_id) do
+    Repo.get_by(UserCredential, user_id: user_id, provider: "salesforce")
+  end
+
   defp get_user_by_oauth_uid(provider, uid) do
     from(c in UserCredential,
       where: c.provider == ^provider and c.uid == ^uid,

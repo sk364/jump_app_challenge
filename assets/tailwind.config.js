@@ -15,6 +15,25 @@ module.exports = {
     extend: {
       colors: {
         brand: "#FD4F00",
+        salesforce: {
+          overlay: "#B1B1B1",
+          card: "#f5f8fa",
+          input: "#C9CDD1",
+          icon: "#6B7280",
+          checkbox: "#0176D3",
+          pill: "#E1E8F0",
+          "pill-text": "#121418",
+          link: "#0176D3",
+          "link-hover": "#014486",
+          hide: "#676B70",
+          "hide-hover": "#565A5E",
+          cancel: "#151515",
+          button: "#0176D3",
+          "button-hover": "#014486",
+          arrow: "#BBBCBB",
+          avatar: "#C9D1D9",
+          "avatar-text": "#0C1216",
+        },
         hubspot: {
           overlay: "#B1B1B1",
           card: "#f5f8f7",
