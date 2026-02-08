@@ -2,8 +2,8 @@ import Config
 
 # Configure your database
 config :social_scribe, SocialScribe.Repo,
-  username: "sachinkukreja",
-  password: "",
+  username: "postgres",
+  password: "postgres",
   hostname: "localhost",
   database: "social_scribe_dev",
   stacktrace: true,
