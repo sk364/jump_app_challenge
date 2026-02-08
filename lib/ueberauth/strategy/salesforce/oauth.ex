@@ -1,4 +1,4 @@
-defmodule SocialScribe.Ueberauth.Strategy.Salesforce.OAuth do
+defmodule Ueberauth.Strategy.Salesforce.OAuth do
   @moduledoc """
   OAuth2 client for Salesforce
   """
@@ -31,8 +31,6 @@ defmodule SocialScribe.Ueberauth.Strategy.Salesforce.OAuth do
   end
 
   def get_token(params \\ [], headers \\ []) do
-    Logger.info("Requesting token")
-
     oauth_client = client()
 
     token_params = params
@@ -66,24 +64,15 @@ defmodule SocialScribe.Ueberauth.Strategy.Salesforce.OAuth do
   defp parse_and_fix_token(client) do
     access_token = client.token.access_token
 
-    Logger.info("Parsing token response...")
-    Logger.debug("Raw access_token: #{inspect(String.slice(to_string(access_token), 0..50))}...")
-
     # Check if it's a JSON string
     parsed_data = if is_binary(access_token) and String.starts_with?(access_token, "{") do
-      Logger.info("Token is JSON string, parsing...")
-
       case Jason.decode(access_token) do
         {:ok, data} ->
-          Logger.info("✓ Parsed JSON successfully")
           data
         {:error, error} ->
           Logger.error("Failed to parse JSON: #{inspect(error)}")
           nil
       end
-    else
-      Logger.info("Token already in correct format")
-      nil
     end
 
     # If we successfully parsed JSON, rebuild the token
@@ -101,10 +90,6 @@ defmodule SocialScribe.Ueberauth.Strategy.Salesforce.OAuth do
           "issued_at" => parsed_data["issued_at"]
         }
       }
-
-      Logger.info("✓ Token rebuilt successfully")
-      Logger.debug("Instance URL: #{new_token.other_params["instance_url"]}")
-      Logger.debug("ID URL: #{new_token.other_params["id"]}")
 
       {:ok, %{client | token: new_token}}
     else

@@ -1,9 +1,9 @@
-defmodule SocialScribe.Ueberauth.Strategy.Salesforce do
+defmodule Ueberauth.Strategy.Salesforce do
   @moduledoc """
   Salesforce Strategy for Ueberauth with PKCE support.
   """
   use Ueberauth.Strategy,
-    oauth2_module: SocialScribe.Ueberauth.Strategy.Salesforce.OAuth,
+    oauth2_module: Ueberauth.Strategy.Salesforce.OAuth,
     ignores_csrf_attack: true,
     default_scope: "api refresh_token"
 
@@ -14,11 +14,9 @@ defmodule SocialScribe.Ueberauth.Strategy.Salesforce do
   require Logger
 
   # Define the OAuth module as a module attribute
-  @oauth_module SocialScribe.Ueberauth.Strategy.Salesforce.OAuth
+  @oauth_module Ueberauth.Strategy.Salesforce.OAuth
 
   def handle_request!(conn) do
-    Logger.info("=== Salesforce OAuth: Starting request ===")
-
     scopes = conn.params["scope"] || "api refresh_token"
 
     code_verifier = generate_code_verifier()
@@ -31,10 +29,7 @@ defmodule SocialScribe.Ueberauth.Strategy.Salesforce do
       code_challenge_method: "S256"
     ]
 
-    # Use the module attribute directly
     redirect_url = @oauth_module.authorize_url!(opts)
-
-    Logger.info("Redirecting to Salesforce")
 
     conn
     |> put_session(:salesforce_code_verifier, code_verifier)
@@ -42,12 +37,10 @@ defmodule SocialScribe.Ueberauth.Strategy.Salesforce do
   end
 
   def handle_callback!(%Plug.Conn{params: %{"code" => code}} = conn) do
-    Logger.info("=== Salesforce OAuth: Callback received ===")
     exchange_token(conn, code)
   end
 
   def handle_callback!(conn) do
-    Logger.error("Callback without code")
     set_errors!(conn, [error("missing_code", "No authorization code")])
   end
 
@@ -103,8 +96,6 @@ defmodule SocialScribe.Ueberauth.Strategy.Salesforce do
   # Private functions
 
   defp exchange_token(conn, code) do
-    Logger.info("Exchanging code for token...")
-
     code_verifier = get_session(conn, :salesforce_code_verifier)
 
     params = [
@@ -136,11 +127,9 @@ defmodule SocialScribe.Ueberauth.Strategy.Salesforce do
 
   defp get_user(client) do
     id_url = client.token.other_params["id"]
-    Logger.info("Fetching user from: #{id_url}")
 
     case OAuth2.Client.get(client, id_url) do
       {:ok, %OAuth2.Response{body: user}} when is_map(user) ->
-        Logger.info("✓ User retrieved")
         user
 
       _ ->
