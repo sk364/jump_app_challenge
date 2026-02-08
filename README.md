@@ -119,6 +119,7 @@ Follow these steps to get SocialScribe running on your local machine.
         * `GOOGLE_CLIENT_SECRET`: Your Google OAuth Client Secret.
         * `GOOGLE_REDIRECT_URI`: `"http://localhost:4000/auth/google/callback"`
         * `RECALL_API_KEY`: Your Recall.ai API Key (as provided for the challenge).
+        * `RECALL_REGION`: The region in which the API Key is generated (e.g. "us-west-2")
         * `GEMINI_API_KEY`: Your Google Gemini API Key.
         * `LINKEDIN_CLIENT_ID`: Your LinkedIn App Client ID.
         * `LINKEDIN_CLIENT_SECRET`: Your LinkedIn App Client Secret.
@@ -129,6 +130,8 @@ Follow these steps to get SocialScribe running on your local machine.
         * `HUBSPOT_CLIENT_ID`: Your HubSpot App Client ID.
         * `HUBSPOT_CLIENT_SECRET`: Your HubSpot App Client Secret.
         * `HUBSPOT_REDIRECT_URI`: `"http://localhost:4000/auth/hubspot/callback"`
+        * `SALESFORCE_CLIENT_ID`: Your Salesforce App Client ID.
+        * `SALESFORCE_CLIENT_SECRET`: Your Salesforce App Client Secret.
 
 4.  **Start the Phoenix Server:**
     ```bash
