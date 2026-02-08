@@ -24,7 +24,7 @@ jobs:
             git pull origin main
 
             # Restart the service
-            sudo systemctl restart myapp.service
+            sudo systemctl restart jump.service
 
             # Check service status
-            sudo systemctl status myapp.service --no-pager
+            sudo systemctl status jump.service --no-pager
