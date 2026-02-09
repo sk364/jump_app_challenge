@@ -64,4 +64,13 @@
       {@inner_content}
     </main>
   </div>
+
+  <.live_component
+    module={SocialScribeWeb.ChatLive.ChatPanelComponent}
+    id="ask-anything-panel"
+    current_user={@current_user}
+    chat_conversation={assigns[:chat_conversation]}
+    chat_messages={assigns[:chat_messages] || []}
+    connected_crms={assigns[:chat_connected_crms] || []}
+  />
 </div>

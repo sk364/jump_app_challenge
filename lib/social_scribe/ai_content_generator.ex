@@ -155,6 +155,58 @@ defmodule SocialScribe.AIContentGenerator do
     end
   end
 
+  @impl SocialScribe.AIContentGeneratorApi
+  def chat_response(messages, context) do
+    system_prompt = Map.get(context, :system_prompt, "You are a helpful meeting assistant.")
+
+    call_gemini_chat(messages, system_prompt)
+  end
+
+  defp call_gemini_chat(messages, system_prompt) do
+    api_key = Application.get_env(:social_scribe, :gemini_api_key)
+
+    if is_nil(api_key) or api_key == "" do
+      {:error, {:config_error, "Gemini API key is missing - set GEMINI_API_KEY env var"}}
+    else
+      path = "/#{@gemini_model}:generateContent?key=#{api_key}"
+
+      contents =
+        messages
+        |> Enum.map(fn msg ->
+          role = if msg.role == "assistant", do: "model", else: "user"
+          %{role: role, parts: [%{text: msg.content}]}
+        end)
+
+      payload = %{
+        system_instruction: %{parts: [%{text: system_prompt}]},
+        contents: contents
+      }
+
+      case Tesla.post(client(), path, payload) do
+        {:ok, %Tesla.Env{status: 200, body: body}} ->
+          text_path = [
+            "candidates",
+            Access.at(0),
+            "content",
+            "parts",
+            Access.at(0),
+            "text"
+          ]
+
+          case get_in(body, text_path) do
+            nil -> {:error, {:parsing_error, "No text content found in Gemini response", body}}
+            text_content -> {:ok, text_content}
+          end
+
+        {:ok, %Tesla.Env{status: status, body: error_body}} ->
+          {:error, {:api_error, status, error_body}}
+
+        {:error, reason} ->
+          {:error, {:http_error, reason}}
+      end
+    end
+  end
+
   defp parse_salesforce_suggestions(response) do
     cleaned =
       response
