@@ -86,8 +86,11 @@ defmodule SocialScribe.Chat.ContextBuilder do
   defp format_full_contact(contact, provider) do
     fields =
       contact
-      |> Enum.reject(fn {_k, v} -> is_nil(v) or v == "" end)
-      |> Enum.map(fn {k, v} -> "  #{k}: #{v}" end)
+      |> Enum.reject(fn {k, _v} -> k in [:id, :display_name] end)
+      |> Enum.map(fn {k, v} ->
+        display_value = if is_nil(v) or v == "", do: "Not set", else: v
+        "  #{k}: #{display_value}"
+      end)
       |> Enum.join("\n")
 
     "### Contact (#{provider}, ID: #{contact[:id] || contact["id"]})\n#{fields}"
