@@ -7,7 +7,7 @@ defmodule SocialScribeWeb.ChatLive.MessageComponents do
 
   def timestamp_divider(assigns) do
     ~H"""
-    <div class="flex items-center gap-3 my-5">
+    <div class="flex items-center gap-3 mt-2 mb-5">
       <div class="flex-1 h-px bg-gray-200"></div>
       <span class="text-xs text-gray-400 whitespace-nowrap">
         {format_timestamp(@datetime)}
