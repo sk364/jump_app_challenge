@@ -9,9 +9,8 @@ defmodule SocialScribeWeb.MeetingLive.Show do
   alias SocialScribe.Automations
   alias SocialScribe.Accounts
   alias SocialScribe.HubspotApiBehaviour, as: HubspotApi
-  alias SocialScribe.HubspotSuggestions
+  alias SocialScribe.CrmSuggestions
   alias SocialScribe.SalesforceApiBehaviour, as: SalesforceApi
-  alias SocialScribe.SalesforceSuggestions
 
   @impl true
   def mount(%{"id" => meeting_id}, _session, socket) do
@@ -104,9 +103,9 @@ defmodule SocialScribeWeb.MeetingLive.Show do
 
   @impl true
   def handle_info({:generate_suggestions, contact, meeting, _credential}, socket) do
-    case HubspotSuggestions.generate_suggestions_from_meeting(meeting) do
+    case CrmSuggestions.generate_suggestions_from_meeting(:hubspot, meeting) do
       {:ok, suggestions} ->
-        merged = HubspotSuggestions.merge_with_contact(suggestions, normalize_contact(contact))
+        merged = CrmSuggestions.merge_with_contact(:hubspot, suggestions, normalize_contact(contact))
 
         send_update(SocialScribeWeb.MeetingLive.HubspotModalComponent,
           id: "hubspot-modal",
@@ -171,9 +170,9 @@ defmodule SocialScribeWeb.MeetingLive.Show do
 
   @impl true
   def handle_info({:generate_salesforce_suggestions, contact, meeting, _credential}, socket) do
-    case SalesforceSuggestions.generate_suggestions_from_meeting(meeting) do
+    case CrmSuggestions.generate_suggestions_from_meeting(:salesforce, meeting) do
       {:ok, suggestions} ->
-        merged = SalesforceSuggestions.merge_with_contact(suggestions, normalize_contact(contact))
+        merged = CrmSuggestions.merge_with_contact(:salesforce, suggestions, normalize_contact(contact))
 
         send_update(SocialScribeWeb.MeetingLive.SalesforceModalComponent,
           id: "salesforce-modal",

@@ -166,7 +166,6 @@ defmodule SocialScribeWeb.ChatLive.MessageComponents do
        when is_list(contacts) and contacts != [] do
     contact_map = build_contact_map(contacts)
     names = sorted_names(contact_map)
-    dbg()
 
     case names do
       [] -> [{:text, content}]

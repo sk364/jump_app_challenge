@@ -1,9 +1,9 @@
-defmodule SocialScribe.SalesforceSuggestionsTest do
+defmodule SocialScribe.CrmSuggestions.SalesforceTest do
   use SocialScribe.DataCase
 
-  alias SocialScribe.SalesforceSuggestions
+  alias SocialScribe.CrmSuggestions
 
-  describe "merge_with_contact/2" do
+  describe "merge_with_contact/3 for salesforce" do
     test "merges suggestions with contact data and filters unchanged values" do
       suggestions = [
         %{
@@ -33,7 +33,7 @@ defmodule SocialScribe.SalesforceSuggestionsTest do
         email: "test@example.com"
       }
 
-      result = SalesforceSuggestions.merge_with_contact(suggestions, contact)
+      result = CrmSuggestions.merge_with_contact(:salesforce, suggestions, contact)
 
       # Only phone should remain since Department maps to :company which already matches
       assert length(result) == 1
@@ -59,7 +59,7 @@ defmodule SocialScribe.SalesforceSuggestionsTest do
         email: "test@example.com"
       }
 
-      result = SalesforceSuggestions.merge_with_contact(suggestions, contact)
+      result = CrmSuggestions.merge_with_contact(:salesforce, suggestions, contact)
 
       assert result == []
     end
@@ -67,7 +67,7 @@ defmodule SocialScribe.SalesforceSuggestionsTest do
     test "handles empty suggestions list" do
       contact = %{id: "003xx000001", email: "test@example.com"}
 
-      result = SalesforceSuggestions.merge_with_contact([], contact)
+      result = CrmSuggestions.merge_with_contact(:salesforce, [], contact)
 
       assert result == []
     end
@@ -89,7 +89,7 @@ defmodule SocialScribe.SalesforceSuggestionsTest do
 
       contact = %{id: "003xx000001", phone: nil}
 
-      result = SalesforceSuggestions.merge_with_contact(suggestions, contact)
+      result = CrmSuggestions.merge_with_contact(:salesforce, suggestions, contact)
 
       assert hd(result).label == "Phone"
     end
