@@ -73,7 +73,7 @@ Social Scribe is a powerful Elixir and Phoenix LiveView application designed to 
 * **Backend:** Elixir, Phoenix LiveView
 * **Database:** PostgreSQL
 * **Background Jobs:** Oban
-* **Authentication:** Ueberauth (for Google, LinkedIn, Facebook, HubSpot OAuth)
+* **Authentication:** Ueberauth (for Google, LinkedIn, Facebook, HubSpot, Salesforce OAuth)
 * **Meeting Transcription:** Recall.ai API
 * **AI Content Generation:** Google Gemini API (Flash models)
 * **Frontend:** Tailwind CSS, Heroicons (via `tailwind.config.js`)
@@ -187,6 +187,96 @@ Now you can visit [`localhost:4000`](http://localhost:4000) from your browser.
 * **Selective Updates:** Checkbox per field allows selective updates; "Update HubSpot" button disabled until at least one field selected
 * **Form Submission:** Batch-updates selected contact properties via `HubspotApi.update_contact`
 * **Click-away Handler:** Closes dropdown without clearing selection
+
+---
+
+## 🔗 Salesforce Integration
+
+### Salesforce OAuth Integration
+
+* **Custom Ueberauth Strategy:** Implemented in `lib/ueberauth/strategy/salesforce.ex`
+* **OAuth 2.0 Flow:** Handles authorization code flow with Salesforce's `/services/oauth2/authorize` and `/services/oauth2/token` endpoints
+* **Credential Storage:** Credentials stored in `user_credentials` table with `provider: "salesforce"`, including `token`, `refresh_token`, and `expires_at`
+* **Token Refresh:**
+    * `SalesforceTokenRefresher` Oban cron worker runs every 5 minutes to proactively refresh tokens expiring within 10 minutes
+    * Internal `with_token_refresh/2` wrapper automatically refreshes expired tokens on API calls and retries the request
+    * Refresh failures are logged; users are prompted to re-authenticate if refresh token is invalid
+
+### Salesforce Modal UI
+
+* **LiveView Component:** Located at `lib/social_scribe_web/live/meeting_live/salesforce_modal_component.ex`
+* **Contact Search:** Debounced input triggers Salesforce API search, results displayed in dropdown
+* **AI Suggestions:** Fetched via `SalesforceSuggestions.generate_suggestions` which calls Gemini with transcript context
+* **Suggestion Cards:** Each card displays:
+    * Field label
+    * Current value (strikethrough)
+    * Arrow
+    * Suggested value
+    * Timestamp link
+* **Selective Updates:** Checkbox per field allows selective updates; "Update Salesforce" button disabled until at least one field selected
+* **Form Submission:** Batch-updates selected contact properties via `SalesforceApi.update_contact`
+* **Click-away Handler:** Closes dropdown without clearing selection
+
+---
+
+## 💬 Ask Anything (AI Chat)
+
+A conversational AI panel embedded in the dashboard that lets users query meeting data, look up CRM contact details, and request contact field updates — all through natural language.
+
+### Architecture Overview
+
+```
+User types message
+    → ChatPanelComponent (LiveComponent)
+        → ChatHook (on_mount hook, handles async work)
+            → Task.start (non-blocking)
+                → ContextBuilder (builds system prompt with CRM data)
+                → AIContentGeneratorApi.chat_response (Gemini multi-turn)
+            ← send_update back to ChatPanelComponent
+```
+
+### Database
+
+* **`conversations`** — `id`, `title`, `user_id`, `timestamps`
+* **`chat_messages`** — `id`, `role` (user/assistant/system), `content`, `metadata` (JSONB), `conversation_id`, `timestamps`
+* Migrations: `priv/repo/migrations/20250526000001_create_conversations.exs`, `20250526000002_create_chat_messages.exs`
+
+### Key Modules
+
+| Module | Path | Purpose |
+|--------|------|---------|
+| `Chat` | `lib/social_scribe/chat.ex` | Context module — CRUD for conversations and messages, uses `Ecto.Multi` to touch conversation `updated_at` on each message |
+| `Chat.Conversation` | `lib/social_scribe/chat/conversation.ex` | Ecto schema, belongs_to `:user`, has_many `:messages` |
+| `Chat.Message` | `lib/social_scribe/chat/message.ex` | Ecto schema, role validated to `~w(user assistant system)` |
+| `Chat.ContactSearch` | `lib/social_scribe/chat/contact_search.ex` | Parallel CRM search via `Task.async` — queries both HubSpot and Salesforce simultaneously, tags results with `:provider` |
+| `Chat.ContextBuilder` | `lib/social_scribe/chat/context_builder.ex` | Builds the AI system prompt. Fetches full contact records from CRM APIs (`get_contact/2`) so the AI can answer questions about phone, company, job title, etc. |
+| `Chat.CrmActionHandler` | `lib/social_scribe/chat/crm_action_handler.ex` | Parses hidden JSON action blocks from AI responses and executes CRM updates via the appropriate API |
+| `ChatHook` | `lib/social_scribe_web/live_hooks/chat_hook.ex` | `on_mount` hook attached to the dashboard `live_session`. Uses `attach_hook(:handle_info)` to intercept chat messages. Spawns async tasks for AI responses, contact search, and CRM actions |
+| `ChatPanelComponent` | `lib/social_scribe_web/live/chat_live/chat_panel_component.ex` | Main LiveComponent — manages panel state, message list, mention input, conversation tabs |
+| `MessageComponents` | `lib/social_scribe_web/live/chat_live/message_components.ex` | Function components for rendering messages, inline mention avatars with CRM provider logos, source badges, typing indicator |
+
+### @Mention System
+
+* **Typing `@` in the input** triggers a contact search across connected CRMs via `ContactSearch.search/2`
+* Results appear in a dropdown with contact avatar (initials + deterministic color) and a small CRM provider logo badge (HubSpot/Salesforce SVG)
+* Selected contacts are stored in the component's `mentioned_contacts` assign and persisted in the message's `metadata["mentioned_contacts"]`
+* **User messages** — `parse_mentions/2` splits content on `@Name` patterns using `Regex.split/3` with `include_captures: true`
+* **Assistant messages** — matches bare contact names (without `@`) against `all_mentioned_contacts` collected from the full conversation history
+* Mentions render inline as an avatar circle + CRM logo badge + bold name
+
+### CRM Update Flow
+
+1. User asks to update a field (e.g., "Update John's phone to 555-1234")
+2. AI responds with a human-readable confirmation message and a hidden JSON action block at the end
+3. `CrmActionHandler.parse_action/1` extracts the JSON; the block is stripped from the displayed message by `strip_json_action_block/1`
+4. Confirm/Cancel buttons appear in the UI (`crm_action_buttons` component)
+5. On confirm → `ChatHook` dispatches `execute_action/2` → calls `HubspotApi.update_contact` or `SalesforceApi.update_contact`
+6. Result message shown: "Done! The contact has been updated successfully." or cancellation message
+
+### JS Hooks (`assets/js/hooks.js`)
+
+* **`ScrollToBottom`** — Uses `MutationObserver` to auto-scroll the message list when new messages arrive
+* **`MentionDetector`** — Listens on the input's `input` event, detects `@` followed by a query, and pushes `search_contacts` event to the server
 
 ---
 
