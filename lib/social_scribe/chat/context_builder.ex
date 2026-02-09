@@ -85,17 +85,60 @@ defmodule SocialScribe.Chat.ContextBuilder do
   defp fetch_full_contact(_user, contact), do: format_basic_contact(contact)
 
   defp format_full_contact(contact, provider) do
+    labels = field_labels(provider)
+
     fields =
       contact
       |> Enum.reject(fn {k, _v} -> k in [:id, :display_name] end)
       |> Enum.map(fn {k, v} ->
         display_value = if is_nil(v) or v == "", do: "Not set", else: v
-        "  #{k}: #{display_value}"
+        label = Map.get(labels, k, to_string(k))
+        "  #{k} (#{label}): #{display_value}"
       end)
       |> Enum.join("\n")
 
     "### Contact (#{provider}, ID: #{contact[:id] || contact["id"]})\n#{fields}"
   end
+
+  defp field_labels("salesforce") do
+    %{
+      firstname: "First Name",
+      lastname: "Last Name",
+      email: "Email",
+      phone: "Phone",
+      mobilephone: "Mobile Phone",
+      company: "Department",
+      jobtitle: "Job Title",
+      address: "Mailing Street",
+      city: "Mailing City",
+      state: "Mailing State",
+      zip: "ZIP/Postal Code",
+      country: "Mailing Country",
+      description: "Description"
+    }
+  end
+
+  defp field_labels("hubspot") do
+    %{
+      firstname: "First Name",
+      lastname: "Last Name",
+      email: "Email",
+      phone: "Phone",
+      mobilephone: "Mobile Phone",
+      company: "Company",
+      jobtitle: "Job Title",
+      address: "Address",
+      city: "City",
+      state: "State",
+      zip: "ZIP Code",
+      country: "Country",
+      website: "Website",
+      linkedin_url: "LinkedIn",
+      twitter_handle: "Twitter"
+    }
+  end
+
+  defp field_labels(_), do: %{}
 
   defp format_basic_contact(contact) do
     "### Contact (#{contact["provider"]}, ID: #{contact["id"]})\n" <>
