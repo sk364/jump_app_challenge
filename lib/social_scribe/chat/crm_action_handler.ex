@@ -80,18 +80,34 @@ defmodule SocialScribe.Chat.CrmActionHandler do
 
   # The AI sees atom-style keys (phone, firstname) from formatted contact data,
   # but Salesforce API requires PascalCase field names (Phone, FirstName).
-  defp to_salesforce_field("firstname"), do: "FirstName"
-  defp to_salesforce_field("lastname"), do: "LastName"
-  defp to_salesforce_field("email"), do: "Email"
-  defp to_salesforce_field("phone"), do: "Phone"
-  defp to_salesforce_field("mobilephone"), do: "MobilePhone"
-  defp to_salesforce_field("company"), do: "Department"
-  defp to_salesforce_field("jobtitle"), do: "Title"
-  defp to_salesforce_field("address"), do: "MailingStreet"
-  defp to_salesforce_field("city"), do: "MailingCity"
-  defp to_salesforce_field("state"), do: "MailingState"
-  defp to_salesforce_field("zip"), do: "MailingPostalCode"
-  defp to_salesforce_field("country"), do: "MailingCountry"
-  defp to_salesforce_field("description"), do: "Description"
-  defp to_salesforce_field(field), do: field
+  # Also handle common variations the AI might generate.
+  defp to_salesforce_field(field) do
+    normalized = field |> String.downcase() |> String.replace(~r/[\s_-]/, "")
+
+    case normalized do
+      "firstname" -> "FirstName"
+      "lastname" -> "LastName"
+      "email" -> "Email"
+      "phone" -> "Phone"
+      "mobilephone" -> "MobilePhone"
+      "company" -> "Department"
+      "department" -> "Department"
+      "jobtitle" -> "Title"
+      "title" -> "Title"
+      "address" -> "MailingStreet"
+      "mailingstreet" -> "MailingStreet"
+      "city" -> "MailingCity"
+      "mailingcity" -> "MailingCity"
+      "state" -> "MailingState"
+      "mailingstate" -> "MailingState"
+      "zip" -> "MailingPostalCode"
+      "zipcode" -> "MailingPostalCode"
+      "postalcode" -> "MailingPostalCode"
+      "mailingpostalcode" -> "MailingPostalCode"
+      "country" -> "MailingCountry"
+      "mailingcountry" -> "MailingCountry"
+      "description" -> "Description"
+      _ -> field
+    end
+  end
 end

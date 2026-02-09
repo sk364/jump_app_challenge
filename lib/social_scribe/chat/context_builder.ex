@@ -29,6 +29,7 @@ defmodule SocialScribe.Chat.ContextBuilder do
     ```json
     {"action": "update_contact", "contact_id": "<id>", "provider": "<hubspot|salesforce>", "field": "<field_name>", "value": "<new_value>"}
     ```
+    4. For the "field" value, use the exact field key shown in the contact data above (e.g. "jobtitle", "phone", "country", "mobilephone", "company", "zip"). Any field listed in the contact data can be updated, including fields marked "Not set".
     Only include the JSON block when the user explicitly asks to update or change a field. Otherwise, respond conversationally. Never show raw JSON, IDs, or technical details in the conversational part of your response.
     """
   end
